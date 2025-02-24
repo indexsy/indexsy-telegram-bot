@@ -4,7 +4,7 @@ import json
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables lol
 load_dotenv()
 
 # Store engagement data in a JSON file
