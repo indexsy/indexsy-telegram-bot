@@ -34,4 +34,11 @@ ENV/
 *.swo
 
 # Project specific
-engagement_data.json 
+engagement_data.json
+
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes 
