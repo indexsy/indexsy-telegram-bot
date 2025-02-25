@@ -79,6 +79,9 @@ async def track_message(update: Update, context: CallbackContext):
             message_senders[chat_id] = {}
         message_senders[chat_id][message_id] = user_id
         
+        # Save data after update
+        save_data()
+        
         logger.info(f"📝 Message from {username}")
         
     except Exception as e:
@@ -131,7 +134,9 @@ async def track_reaction(update: Update, context: CallbackContext):
                 target_name = engagement_data[chat_id][target_id]["username"]
                 logger.info(f"Credited reaction to {target_name}")
 
-        logger.info("Reaction processed successfully")
+        # Add save after reaction updates
+        save_data()
+        logger.info("Reaction processed and data saved")
 
     except Exception as e:
         logger.error(f"Error tracking reaction: {e}", exc_info=True)
@@ -244,9 +249,8 @@ async def show_history(update: Update, context: CallbackContext):
         logger.error(f"Error showing history: {e}")
 
 def load_data():
-    """Load current and historical engagement data."""
+    """Load engagement data from file."""
     try:
-        # Load current month's data
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, 'r') as f:
                 return json.load(f)
@@ -255,11 +259,12 @@ def load_data():
         logger.error(f"Error loading data: {e}")
         return {}
 
-def save_data(data):
-    """Save current engagement data."""
+def save_data():
+    """Save engagement data to file."""
     try:
         with open(DATA_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
+            json.dump(engagement_data, f, indent=2)
+        logger.info("💾 Data saved successfully")
     except Exception as e:
         logger.error(f"Error saving data: {e}")
 
@@ -301,7 +306,7 @@ def check_monthly_reset():
                     })
             
             # Save reset data
-            save_data(current_data)
+            save_data()
             logger.info(f"Monthly reset performed for {current_month}")
             
     except Exception as e:
@@ -309,10 +314,10 @@ def check_monthly_reset():
 
 def main():
     try:
-        # Load data and check for reset
+        # Load existing data at startup
         global engagement_data
         engagement_data = load_data()
-        check_monthly_reset()
+        logger.info(f"📂 Loaded existing data: {len(engagement_data)} chats")
         
         app = Application.builder().token(BOT_TOKEN).build()
         
