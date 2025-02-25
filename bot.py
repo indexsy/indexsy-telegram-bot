@@ -15,12 +15,13 @@ import logging
 # Set up logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG
+    level=logging.INFO
 )
 
 # Add file handler separately
 file_handler = logging.FileHandler('bot.log')
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+file_handler.setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(file_handler)
@@ -69,11 +70,12 @@ async def track_message(update: Update, context: CallbackContext):
     user_id = str(update.message.from_user.id)
     username = update.message.from_user.username or update.message.from_user.first_name
     
-    logger.info(f"Message from: {username} in chat: {chat_id}")
+    logger.info(f"Message from: {username} (ID: {user_id}) in chat: {chat_id}")
     
     # Initialize chat data if it doesn't exist
     if chat_id not in engagement_data:
         engagement_data[chat_id] = {}
+        logger.info(f"Created new chat data for {chat_id}")
     
     if user_id not in engagement_data[chat_id]:
         engagement_data[chat_id][user_id] = {
@@ -83,13 +85,15 @@ async def track_message(update: Update, context: CallbackContext):
             "reactions_given": 0,
             "reactions_received": 0
         }
+        logger.info(f"Created new user data for {username}")
     
     engagement_data[chat_id][user_id]["messages"] += 1
     engagement_data[chat_id][user_id]["points"] += 1
     save_engagement_data(engagement_data)
     
-    logger.info(f"Added point for message from {username}")
-    logger.info(f"Current points: {engagement_data[chat_id][user_id]['points']}")
+    logger.info(f"Added point for message. Current stats for {username}:")
+    logger.info(f"Points: {engagement_data[chat_id][user_id]['points']}")
+    logger.info(f"Messages: {engagement_data[chat_id][user_id]['messages']}")
 
 async def track_reaction(update: Update, context: CallbackContext):
     logger.info("========== NEW REACTION EVENT ==========")
@@ -145,13 +149,19 @@ async def track_reaction(update: Update, context: CallbackContext):
 
 async def show_leaderboard(update: Update, context: CallbackContext):
     chat_id = str(update.message.chat.id)
+    logger.info(f"Showing leaderboard for chat {chat_id}")
+    
+    # Debug print current engagement data
+    logger.info(f"Current engagement data: {engagement_data}")
     
     # Initialize chat data if it doesn't exist
     if chat_id not in engagement_data:
         engagement_data[chat_id] = {}
+        logger.info("No chat data found, initialized empty data")
     
     # Get chat-specific data
     chat_data = engagement_data[chat_id]
+    logger.info(f"Chat data: {chat_data}")
     
     sorted_users = sorted(
         chat_data.items(),
@@ -171,6 +181,7 @@ async def show_leaderboard(update: Update, context: CallbackContext):
     
     if not sorted_users:
         leaderboard_text += "No engagement recorded yet!"
+        logger.info("No users found in leaderboard")
     
     await update.message.reply_text(leaderboard_text)
 
