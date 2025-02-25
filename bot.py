@@ -7,7 +7,6 @@ from telegram.ext import (
     CallbackContext,
     ChatMemberHandler
 )
-from telegram.constants import MessageReactionType
 import json
 import os
 from dotenv import load_dotenv
@@ -106,44 +105,42 @@ async def track_reaction(update: Update, context: CallbackContext):
     logger.info(f"Chat ID: {reaction.chat.id}")
     logger.info(f"Message ID: {reaction.message_id}")
     logger.info(f"User: {reaction.user.username if reaction.user else 'Unknown'}")
-    logger.info(f"Type: {reaction.type}")
     
     try:
-        if reaction.type == MessageReactionType.ADDED:
-            # Process new reaction
-            if not reaction.user or not reaction.message or not reaction.message.from_user:
-                logger.info("Missing user data")
-                return
-                
-            target_user = reaction.message.from_user
+        # Process new reaction
+        if not reaction.user or not reaction.message or not reaction.message.from_user:
+            logger.info("Missing user data")
+            return
             
-            # Initialize chat data
-            if reaction.chat.id not in engagement_data:
-                engagement_data[reaction.chat.id] = {}
-            
-            # Process reaction
-            for user, is_reactor in [(reaction.user, True), (target_user, False)]:
-                user_id = str(user.id)
-                if user_id not in engagement_data[reaction.chat.id]:
-                    engagement_data[reaction.chat.id][user_id] = {
-                        "username": user.username or user.first_name,
-                        "points": 0,
-                        "messages": 0,
-                        "reactions_given": 0,
-                        "reactions_received": 0
-                    }
-                
-                if is_reactor:
-                    engagement_data[reaction.chat.id][user_id]["reactions_given"] += 1
-                else:
-                    engagement_data[reaction.chat.id][user_id]["reactions_received"] += 1
-                engagement_data[reaction.chat.id][user_id]["points"] += 1
-            
-            save_engagement_data(engagement_data)
-            logger.info(f"Successfully recorded reaction")
-            logger.info("\n=== Processing Reaction ===")
-            logger.info(f"Adding points for reaction from {reaction.user.username} to message by {target_user.username}")
+        target_user = reaction.message.from_user
         
+        # Initialize chat data
+        if reaction.chat.id not in engagement_data:
+            engagement_data[reaction.chat.id] = {}
+        
+        # Process reaction
+        for user, is_reactor in [(reaction.user, True), (target_user, False)]:
+            user_id = str(user.id)
+            if user_id not in engagement_data[reaction.chat.id]:
+                engagement_data[reaction.chat.id][user_id] = {
+                    "username": user.username or user.first_name,
+                    "points": 0,
+                    "messages": 0,
+                    "reactions_given": 0,
+                    "reactions_received": 0
+                }
+            
+            if is_reactor:
+                engagement_data[reaction.chat.id][user_id]["reactions_given"] += 1
+            else:
+                engagement_data[reaction.chat.id][user_id]["reactions_received"] += 1
+            engagement_data[reaction.chat.id][user_id]["points"] += 1
+        
+        save_engagement_data(engagement_data)
+        logger.info(f"Successfully recorded reaction")
+        logger.info("\n=== Processing Reaction ===")
+        logger.info(f"Adding points for reaction from {reaction.user.username} to message by {target_user.username}")
+    
     except Exception as e:
         logger.error(f"\n=== Error Processing Reaction ===\n{str(e)}\n{type(e)}")
 
@@ -199,7 +196,7 @@ def main():
     # Add message handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
     
-    # Use MessageHandler for reactions instead of ReactionHandler
+    # Use MessageHandler for reactions
     app.add_handler(MessageHandler(filters.StatusUpdate.MESSAGE_REACTION, track_reaction))
     
     # Add error handler
