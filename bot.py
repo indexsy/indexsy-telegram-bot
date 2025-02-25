@@ -36,9 +36,6 @@ print("Bot token:", os.getenv('TELEGRAM_BOT_TOKEN'))
 ENGAGEMENT_FILE = 'engagement_data.json'
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-# Add at the top with other constants
-ALLOWED_CHAT_ID = -1001234567890  # Replace with your channel's ID
-
 # Initialize or load engagement data
 def load_engagement_data():
     if os.path.exists(ENGAGEMENT_FILE):
