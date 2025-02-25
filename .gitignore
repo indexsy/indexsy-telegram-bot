@@ -1,44 +1,13 @@
-# Environment variables
+# Environment
 .env
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
 venv/
-ENV/
 
-# IDE specific files
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Project specific
+# Runtime files
+*.log
+*.pid
 engagement_data.json
 
-# macOS system files
+# IDE/Python
+__pycache__/
+*.pyc
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes 
