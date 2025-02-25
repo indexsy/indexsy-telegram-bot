@@ -131,7 +131,7 @@ async def track_reaction(update: Update, context: CallbackContext):
         logger.error(f"Error tracking reaction: {e}", exc_info=True)
 
 async def show_stats(update: Update, context: CallbackContext):
-    """Show engagement stats."""
+    """Show top 5 users by total points."""
     try:
         chat_id = str(update.message.chat.id)
         
@@ -139,28 +139,58 @@ async def show_stats(update: Update, context: CallbackContext):
             await update.message.reply_text("No engagement recorded yet!")
             return
             
-        text = "📊 Engagement Stats:\n\n"
-        
         # Sort users by total points
         sorted_users = sorted(
             engagement_data[chat_id].items(),
             key=lambda x: x[1]["total_points"],
             reverse=True
-        )
+        )[:5]  # Only top 5
         
-        for user_id, data in sorted_users:
+        text = "📊 Engagement Leaderboard\n\n"
+        for i, (user_id, data) in enumerate(sorted_users, 1):
+            text += f"{i}. @{data['username']} - Total points: {data['total_points']}\n"
+        
+        await update.message.reply_text(text)
+        
+    except Exception as e:
+        logger.error(f"Error showing stats: {e}")
+
+async def show_admin_stats(update: Update, context: CallbackContext):
+    """Show detailed stats for admins (top 25)."""
+    try:
+        chat_id = str(update.message.chat.id)
+        user_id = str(update.message.from_user.id)
+        
+        # Check if user is admin
+        chat_member = await context.bot.get_chat_member(chat_id, user_id)
+        if chat_member.status not in ['administrator', 'creator']:
+            await update.message.reply_text("This command is only available to admins!")
+            return
+        
+        if chat_id not in engagement_data:
+            await update.message.reply_text("No engagement recorded yet!")
+            return
+            
+        # Sort users by total points
+        sorted_users = sorted(
+            engagement_data[chat_id].items(),
+            key=lambda x: x[1]["total_points"],
+            reverse=True
+        )[:25]  # Top 25 for admins
+        
+        text = "📊 Detailed Engagement Stats (Admin View)\n\n"
+        for i, (user_id, data) in enumerate(sorted_users, 1):
             text += (
-                f"@{data['username']}:\n"
-                f"• Messages: {data['messages']}\n"
-                f"• Reactions Given: {data['reactions_given']}\n"
-                f"• Reactions Received: {data['reactions_received']}\n"
-                f"• Total Points: {data['total_points']}\n\n"
+                f"{i}. @{data['username']}\n"
+                f"   Points: {data['total_points']} "
+                f"(Messages: {data['messages']}, "
+                f"Reactions: +{data['reactions_given']}/-{data['reactions_received']})\n\n"
             )
         
         await update.message.reply_text(text)
         
     except Exception as e:
-        logger.error(f"❌ Error showing stats: {e}")
+        logger.error(f"Error showing admin stats: {e}")
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
@@ -168,6 +198,7 @@ def main():
     # Add handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("stats", show_stats))
+    app.add_handler(CommandHandler("statsadmin", show_admin_stats))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
     app.add_handler(ReactionHandler(track_reaction, block=False))
     
