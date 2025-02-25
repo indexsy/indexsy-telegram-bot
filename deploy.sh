@@ -12,8 +12,11 @@ source venv/bin/activate
 # Install/update requirements
 pip install -r requirements.txt
 
-# Kill existing bot process
-pkill -f "python bot.py" || true
+# Kill ALL existing bot processes
+pkill -9 -f "python bot.py" || true
+
+# Clean up existing screen sessions
+screen -X -S bot quit || true
 
 # Start bot in background
 screen -S bot -dm python bot.py
@@ -21,5 +24,5 @@ screen -S bot -dm python bot.py
 # Wait a moment for the bot to start
 sleep 2
 
-# Show last 20 lines of logs instead of continuous tail
+# Show last 20 lines of logs
 tail -n 20 bot.log 
