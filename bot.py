@@ -12,19 +12,18 @@ import os
 from dotenv import load_dotenv
 import logging
 
-# Set up logging at the top of your file
+# Set up logging
 logging.basicConfig(
-    filename='bot.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG,
-    # Add file handler and stream handler to see logs in both file and console
-    handlers=[
-        logging.FileHandler('bot.log'),
-        logging.StreamHandler()
-    ]
+    level=logging.DEBUG
 )
 
+# Add file handler separately
+file_handler = logging.FileHandler('bot.log')
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
 logger = logging.getLogger(__name__)
+logger.addHandler(file_handler)
 
 # Load environment variables
 load_dotenv()
