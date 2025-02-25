@@ -1,0 +1,99 @@
+2025-02-24 19:36:00,937 - __main__ - INFO - Bot starting...
+2025-02-24 19:36:06,164 - __main__ - ERROR - Error occurred: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2025-02-24 19:36:11,465 - __main__ - ERROR - Error occurred: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2025-02-24 19:36:17,768 - __main__ - ERROR - Error occurred: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2025-02-24 19:36:25,591 - __main__ - ERROR - Error occurred: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2025-02-24 19:37:35,563 - __main__ - INFO - Bot starting...
+2025-02-24 19:37:40,864 - __main__ - ERROR - Error occurred: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2025-02-24 19:37:46,705 - __main__ - ERROR - Error occurred: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2025-02-24 19:37:52,540 - __main__ - ERROR - Error occurred: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2025-02-24 19:38:29,476 - __main__ - INFO - Bot starting...
+2025-02-24 19:39:34,015 - __main__ - INFO - Bot starting...
+2025-02-24 19:45:05,477 - __main__ - INFO - Setting up command handlers...
+2025-02-24 19:45:05,477 - __main__ - INFO - Setting up message handlers...
+2025-02-24 19:45:05,477 - __main__ - INFO - Setting up reaction handler...
+2025-02-24 19:45:05,477 - __main__ - INFO - Bot starting...
+2025-02-24 19:45:20,866 - __main__ - INFO - Debug command received
+2025-02-24 19:45:20,866 - __main__ - INFO - Debug info: 🔍 Debug Information:
+
+Chat ID: -1002439963888
+Chat Type: supergroup
+Chat Title: Jacky & Indexsy Bot
+User ID: 811238461
+Username: @indexsy
+2025-02-24 19:46:09,812 - __main__ - INFO - Setting up command handlers...
+2025-02-24 19:46:09,813 - __main__ - INFO - Setting up message handlers...
+2025-02-24 19:46:09,813 - __main__ - INFO - Setting up reaction handler...
+2025-02-24 19:46:09,813 - __main__ - INFO - Bot starting...
+2025-02-24 19:46:24,414 - __main__ - INFO - Debug command received
+2025-02-24 19:46:24,414 - __main__ - INFO - Debug info: 🔍 Debug Information:
+
+Chat ID: -1002439963888
+Chat Type: supergroup
+Chat Title: Jacky & Indexsy Bot
+User ID: 811238461
+Username: @indexsy
+2025-02-24 19:47:10,902 - __main__ - INFO - Setting up command handlers...
+2025-02-24 19:47:10,902 - __main__ - INFO - Setting up message handlers...
+2025-02-24 19:47:10,903 - __main__ - INFO - Setting up reaction handler...
+2025-02-24 19:47:10,903 - __main__ - INFO - Bot starting...
+2025-02-24 19:47:28,691 - __main__ - INFO - Debug command received
+2025-02-24 19:47:28,691 - __main__ - INFO - Debug info: 🔍 Debug Information:
+
+Chat ID: -1002439963888
+Chat Type: supergroup
+Chat Title: Jacky & Indexsy Bot
+User ID: 811238461
+Username: @indexsy
+2025-02-24 19:48:31,119 - __main__ - INFO - Creating new engagement data file: engagement_data.json
+2025-02-24 19:48:31,160 - __main__ - INFO - Setting up command handlers...
+2025-02-24 19:48:31,160 - __main__ - INFO - Setting up message handlers...
+2025-02-24 19:48:31,160 - __main__ - INFO - Setting up reaction handler...
+2025-02-24 19:48:31,160 - __main__ - INFO - Bot starting...
+2025-02-24 19:48:50,748 - __main__ - INFO - Debug command received
+2025-02-24 19:48:50,748 - __main__ - INFO - Debug info: 🔍 Debug Information:
+
+Chat ID: -1002439963888
+Chat Type: supergroup
+Chat Title: Jacky & Indexsy Bot
+User ID: 811238461
+Username: @indexsy
+2025-02-24 19:50:24,965 - __main__ - INFO - Setting up command handlers...
+2025-02-24 19:50:24,965 - __main__ - INFO - Setting up message handlers...
+2025-02-24 19:50:24,965 - __main__ - INFO - Setting up reaction handler...
+2025-02-24 19:50:24,965 - __main__ - INFO - Bot starting...
+2025-02-24 19:50:38,869 - __main__ - INFO - Debug command received
+2025-02-24 19:50:38,869 - __main__ - INFO - Debug info: 🔍 Debug Information:
+
+Chat ID: -1002439963888
+Chat Type: supergroup
+Chat Title: Jacky & Indexsy Bot
+User ID: 811238461
+Username: @indexsy
+2025-02-24 19:51:51,997 - __main__ - INFO - 🔄 Setting up handlers...
+2025-02-24 19:51:51,997 - __main__ - INFO - 📝 Adding message handler
+2025-02-24 19:51:51,997 - __main__ - INFO - Adding command handlers
+2025-02-24 19:51:51,997 - __main__ - INFO - Adding reaction handler
+2025-02-24 19:51:51,997 - __main__ - INFO - 🚀 Bot starting...
+2025-02-24 19:51:59,042 - __main__ - INFO - Debug command received
+2025-02-24 19:51:59,043 - __main__ - INFO - Debug info: 🔍 Debug Information:
+
+Chat ID: -1002439963888
+Chat Type: supergroup
+Chat Title: Jacky & Indexsy Bot
+User ID: 811238461
+Username: @indexsy
+2025-02-24 19:52:46,591 - __main__ - INFO - 📂 Data loaded
+2025-02-24 19:52:46,630 - __main__ - INFO - 🔄 Setting up handlers...
+2025-02-24 19:52:46,631 - __main__ - INFO - 📝 Adding message handler
+2025-02-24 19:52:46,631 - __main__ - INFO - Adding command handlers
+2025-02-24 19:52:46,631 - __main__ - INFO - Adding reaction handler
+2025-02-24 19:52:46,631 - __main__ - INFO - 🚀 Bot starting...
+2025-02-24 19:52:50,584 - __main__ - INFO - Debug command received
+2025-02-24 19:52:50,584 - __main__ - INFO - Debug info: 🔍 Debug Information:
+
+Chat ID: -1002439963888
+Chat Type: supergroup
+Chat Title: Jacky & Indexsy Bot
+User ID: 811238461
+Username: @indexsy

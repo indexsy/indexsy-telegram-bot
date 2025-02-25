@@ -18,6 +18,9 @@ pkill -9 -f "python bot.py" || true
 # Clean up existing screen sessions
 screen -X -S bot quit || true
 
+# Remove PID file if it exists
+rm -f bot.pid
+
 # Start bot in background
 screen -S bot -dm python bot.py
 
