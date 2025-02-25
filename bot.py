@@ -195,8 +195,8 @@ def main():
     # Add message handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
     
-    # Use MessageHandler for reactions
-    app.add_handler(MessageHandler(filters.StatusUpdate.MESSAGE_REACTION, track_reaction))
+    # Use MessageHandler for reactions with updated filter
+    app.add_handler(MessageHandler(filters.REACTION, track_reaction))
     
     # Add error handler
     app.add_error_handler(error_handler)
