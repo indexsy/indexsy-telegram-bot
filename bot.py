@@ -11,6 +11,7 @@ import json
 import os
 from dotenv import load_dotenv
 import logging
+import sys
 
 # Set up logging
 logging.basicConfig(
@@ -62,18 +63,22 @@ async def start(update: Update, context: CallbackContext):
 async def track_message(update: Update, context: CallbackContext):
     try:
         if not update.message or not update.message.from_user:
+            logger.info("Skipping: No message or user data")
             return
         
         chat_id = str(update.message.chat.id)
         user_id = str(update.message.from_user.id)
         username = update.message.from_user.username or update.message.from_user.first_name
+        message_text = update.message.text
         
-        logger.info(f"Processing message from {username} in chat {chat_id}")
+        logger.info(f"Processing message: '{message_text[:30]}...' from {username} in chat {chat_id}")
         
         if chat_id not in engagement_data:
+            logger.info(f"Creating new chat data for {chat_id}")
             engagement_data[chat_id] = {}
         
         if user_id not in engagement_data[chat_id]:
+            logger.info(f"Creating new user data for {username}")
             engagement_data[chat_id][user_id] = {
                 "username": username,
                 "points": 0,
@@ -86,19 +91,30 @@ async def track_message(update: Update, context: CallbackContext):
         engagement_data[chat_id][user_id]["points"] += 1
         save_engagement_data(engagement_data)
         
+        logger.info(f"Updated stats for {username}: messages={engagement_data[chat_id][user_id]['messages']}, points={engagement_data[chat_id][user_id]['points']}")
+        
     except Exception as e:
-        logger.error(f"Error in track_message: {e}")
+        logger.error(f"Error in track_message: {e}", exc_info=True)
 
 async def track_reaction(update: Update, context: CallbackContext):
     try:
-        if not update.message_reaction:
+        logger.info(f"Received update type: {type(update)}")
+        logger.info(f"Update content: {update}")
+        
+        if not hasattr(update, 'message_reaction'):
+            logger.info("No message_reaction in update")
             return
         
         chat_id = str(update.message_reaction.chat.id)
         reactor = update.message_reaction.user
         message = update.message_reaction.message
         
+        logger.info(f"Processing reaction in chat {chat_id}")
+        logger.info(f"Reactor: {reactor.username if reactor else 'Unknown'}")
+        logger.info(f"Message: {message.text[:30] if message and message.text else 'No text'}")
+        
         if not reactor or not message or not message.from_user:
+            logger.info("Missing user data in reaction")
             return
             
         target_user = message.from_user
@@ -168,28 +184,77 @@ async def show_leaderboard(update: Update, context: CallbackContext):
 async def error_handler(update: Update, context: CallbackContext):
     logger.error(f"Error occurred: {context.error}")
 
-def main():
+async def debug_chat_id(update: Update, context: CallbackContext):
     try:
-        app = Application.builder().token(BOT_TOKEN).build()
+        logger.info("Debug command received")
         
-        # Add handlers
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("leaderboard", show_leaderboard))
+        if not update.message:
+            logger.error("No message in debug update")
+            return
+            
+        chat = update.message.chat
+        user = update.message.from_user
         
-        # Message handler
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
+        debug_info = (
+            f"🔍 Debug Information:\n\n"
+            f"Chat ID: {chat.id}\n"
+            f"Chat Type: {chat.type}\n"
+            f"Chat Title: {chat.title or 'N/A'}\n"
+            f"User ID: {user.id}\n"
+            f"Username: @{user.username or 'N/A'}"
+        )
         
-        # Reaction handler
-        app.add_handler(MessageHandler(filters.ALL & ~filters.TEXT & ~filters.COMMAND, track_reaction))
-        
-        # Error handler
-        app.add_error_handler(error_handler)
-        
-        logger.info("Bot starting...")
-        app.run_polling(allowed_updates=["message", "message_reaction"])
+        logger.info(f"Debug info: {debug_info}")
+        await update.message.reply_text(debug_info)
         
     except Exception as e:
-        logger.error(f"Error in main: {e}")
+        logger.error(f"Error in debug command: {e}", exc_info=True)
+
+def check_single_instance():
+    pid_file = "bot.pid"
+    
+    if os.path.exists(pid_file):
+        with open(pid_file, 'r') as f:
+            old_pid = f.read().strip()
+            try:
+                # Check if process still exists
+                os.kill(int(old_pid), 0)
+                logger.error(f"Bot is already running with PID {old_pid}")
+                sys.exit(1)
+            except OSError:
+                pass
+    
+    # Write current PID
+    with open(pid_file, 'w') as f:
+        f.write(str(os.getpid()))
+
+def main():
+    try:
+        check_single_instance()
+        
+        app = Application.builder().token(BOT_TOKEN).build()
+        
+        logger.info("Setting up command handlers...")
+        
+        # Add handlers with logging
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("leaderboard", show_leaderboard))
+        app.add_handler(CommandHandler("debug", debug_chat_id))
+        
+        logger.info("Setting up message handlers...")
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
+        
+        logger.info("Setting up reaction handler...")
+        app.add_handler(MessageHandler(filters.ALL & ~filters.TEXT & ~filters.COMMAND, track_reaction))
+        
+        logger.info("Bot starting...")
+        app.run_polling(
+            allowed_updates=["message", "message_reaction", "edited_message", "channel_post", "callback_query"],
+            drop_pending_updates=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in main: {e}", exc_info=True)
 
 if __name__ == '__main__':
     main() 
