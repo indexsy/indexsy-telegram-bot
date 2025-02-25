@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 import logging
 from datetime import datetime
 import json
+import tempfile
+import shutil
+import sys
 
 # Setup logging
 logging.basicConfig(
@@ -248,25 +251,48 @@ async def show_history(update: Update, context: CallbackContext):
     except Exception as e:
         logger.error(f"Error showing history: {e}")
 
+def save_data():
+    """Save engagement data to file with atomic writes."""
+    try:
+        # Write to a temporary file first
+        with tempfile.NamedTemporaryFile('w', delete=False) as temp_file:
+            json.dump(engagement_data, temp_file, indent=2)
+            temp_file.flush()
+            os.fsync(temp_file.fileno())  # Ensure data is written to disk
+            
+        # Atomically replace the original file
+        shutil.move(temp_file.name, DATA_FILE)
+        logger.info("💾 Data saved successfully")
+        
+    except Exception as e:
+        logger.error(f"Error saving data: {e}")
+        if 'temp_file' in locals() and os.path.exists(temp_file.name):
+            os.remove(temp_file.name)  # Clean up temp file on error
+
 def load_data():
-    """Load engagement data from file."""
+    """Load engagement data from file with detailed error logging."""
     try:
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                if not isinstance(data, dict):
+                    raise ValueError("Loaded data is not a dictionary")
+                logger.info(f"📂 Loaded data for {len(data)} chats")
+                return data
+                
+        logger.info("No data file found, starting fresh")
         return {}
+        
     except Exception as e:
-        logger.error(f"Error loading data: {e}")
+        logger.error(f"Error loading data from {DATA_FILE}: {e}")
+        if os.path.exists(DATA_FILE):
+            try:
+                with open(DATA_FILE, 'r') as f:
+                    content = f.read()
+                    logger.error(f"File content (first 100 chars): {content[:100]}...")
+            except Exception as read_error:
+                logger.error(f"Could not read file content: {read_error}")
         return {}
-
-def save_data():
-    """Save engagement data to file."""
-    try:
-        with open(DATA_FILE, 'w') as f:
-            json.dump(engagement_data, f, indent=2)
-        logger.info("💾 Data saved successfully")
-    except Exception as e:
-        logger.error(f"Error saving data: {e}")
 
 def check_monthly_reset():
     """Check and handle monthly reset."""
@@ -312,13 +338,41 @@ def check_monthly_reset():
     except Exception as e:
         logger.error(f"Error in monthly reset: {e}")
 
+def check_single_instance():
+    """Ensure only one instance of the bot is running."""
+    pid_file = "bot.pid"
+    
+    try:
+        if os.path.exists(pid_file):
+            with open(pid_file, 'r') as f:
+                old_pid = f.read().strip()
+                try:
+                    # Check if process is still running
+                    os.kill(int(old_pid), 0)
+                    logger.error(f"Bot already running with PID {old_pid}")
+                    sys.exit(1)
+                except (ProcessLookupError, ValueError):
+                    # Process not running, we can continue
+                    pass
+                    
+        # Write current PID
+        with open(pid_file, 'w') as f:
+            f.write(str(os.getpid()))
+            
+    except Exception as e:
+        logger.error(f"Error checking single instance: {e}")
+        sys.exit(1)
+
 def main():
     try:
-        # Load existing data at startup
+        # Ensure single instance
+        check_single_instance()
+        
+        # Load existing data
         global engagement_data
         engagement_data = load_data()
-        logger.info(f"📂 Loaded existing data: {len(engagement_data)} chats")
         
+        # Set up application
         app = Application.builder().token(BOT_TOKEN).build()
         
         # Add handlers
@@ -334,8 +388,13 @@ def main():
             allowed_updates=["message", "message_reaction"],
             drop_pending_updates=True
         )
+        
     except Exception as e:
-        logger.error(f"Error in main function: {e}")
+        logger.error(f"Error in main: {e}", exc_info=True)
+        
+    finally:
+        # Save data before exit
+        save_data()
 
 if __name__ == '__main__':
     main()
