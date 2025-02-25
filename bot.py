@@ -3,6 +3,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import os
 from dotenv import load_dotenv
 import logging
+from datetime import datetime
+import json
 
 # Setup logging
 logging.basicConfig(
@@ -14,6 +16,10 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+# Constants for data files
+DATA_FILE = 'engagement_data.json'
+HISTORY_FILE = 'engagement_history.json'
 
 # Store engagement data per chat
 engagement_data = {}
@@ -192,21 +198,139 @@ async def show_admin_stats(update: Update, context: CallbackContext):
     except Exception as e:
         logger.error(f"Error showing admin stats: {e}")
 
+async def show_history(update: Update, context: CallbackContext):
+    """Show historical leaderboard data for admins."""
+    try:
+        chat_id = str(update.message.chat.id)
+        user_id = str(update.message.from_user.id)
+        
+        # Check if user is admin
+        chat_member = await context.bot.get_chat_member(chat_id, user_id)
+        if chat_member.status not in ['administrator', 'creator']:
+            await update.message.reply_text("This command is only available to admins!")
+            return
+        
+        # Load history
+        if not os.path.exists(HISTORY_FILE):
+            await update.message.reply_text("No historical data available yet!")
+            return
+            
+        with open(HISTORY_FILE, 'r') as f:
+            history = json.load(f)
+        
+        # Get last month's data
+        last_month = history.get('last_reset', 'No data')
+        last_month_data = history.get(last_month, {}).get(chat_id, {})
+        
+        if not last_month_data:
+            await update.message.reply_text("No data from last month!")
+            return
+        
+        text = f"📊 Last Month's Top Users ({last_month})\n\n"
+        
+        # Sort and show top 10
+        sorted_users = sorted(
+            last_month_data.items(),
+            key=lambda x: x[1]["total_points"],
+            reverse=True
+        )[:10]
+        
+        for i, (uid, data) in enumerate(sorted_users, 1):
+            text += f"{i}. @{data['username']} - {data['total_points']} points\n"
+        
+        await update.message.reply_text(text)
+        
+    except Exception as e:
+        logger.error(f"Error showing history: {e}")
+
+def load_data():
+    """Load current and historical engagement data."""
+    try:
+        # Load current month's data
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'r') as f:
+                return json.load(f)
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading data: {e}")
+        return {}
+
+def save_data(data):
+    """Save current engagement data."""
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.error(f"Error saving data: {e}")
+
+def check_monthly_reset():
+    """Check and handle monthly reset."""
+    try:
+        current_month = datetime.now().strftime('%Y-%m')
+        
+        # Load current data
+        current_data = load_data()
+        if not current_data:
+            return
+            
+        # Load historical data
+        history = {}
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, 'r') as f:
+                history = json.load(f)
+        
+        # Check if we need to reset
+        data_month = history.get('last_reset', '2000-01')
+        if current_month > data_month:
+            # Save current data to history
+            history['last_reset'] = current_month
+            history[data_month] = current_data
+            
+            # Save history
+            with open(HISTORY_FILE, 'w') as f:
+                json.dump(history, f, indent=2)
+            
+            # Reset current data
+            for chat_id in current_data:
+                for user_id in current_data[chat_id]:
+                    current_data[chat_id][user_id].update({
+                        "messages": 0,
+                        "reactions_given": 0,
+                        "reactions_received": 0,
+                        "total_points": 0
+                    })
+            
+            # Save reset data
+            save_data(current_data)
+            logger.info(f"Monthly reset performed for {current_month}")
+            
+    except Exception as e:
+        logger.error(f"Error in monthly reset: {e}")
+
 def main():
-    app = Application.builder().token(BOT_TOKEN).build()
-    
-    # Add handlers
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("stats", show_stats))
-    app.add_handler(CommandHandler("statsadmin", show_admin_stats))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
-    app.add_handler(ReactionHandler(track_reaction, block=False))
-    
-    logger.info("🚀 Bot starting...")
-    app.run_polling(
-        allowed_updates=["message", "message_reaction"],
-        drop_pending_updates=True
-    )
+    try:
+        # Load data and check for reset
+        global engagement_data
+        engagement_data = load_data()
+        check_monthly_reset()
+        
+        app = Application.builder().token(BOT_TOKEN).build()
+        
+        # Add handlers
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("stats", show_stats))
+        app.add_handler(CommandHandler("statsadmin", show_admin_stats))
+        app.add_handler(CommandHandler("history", show_history))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
+        app.add_handler(ReactionHandler(track_reaction, block=False))
+        
+        logger.info("🚀 Bot starting...")
+        app.run_polling(
+            allowed_updates=["message", "message_reaction"],
+            drop_pending_updates=True
+        )
+    except Exception as e:
+        logger.error(f"Error in main function: {e}")
 
 if __name__ == '__main__':
     main()

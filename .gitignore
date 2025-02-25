@@ -11,3 +11,4 @@ engagement_data.json
 __pycache__/
 *.pyc
 .DS_Store
+engagement_history.json
