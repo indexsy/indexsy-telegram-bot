@@ -5,7 +5,6 @@ from telegram.ext import (
     MessageHandler, 
     filters, 
     CallbackContext,
-    ReactionHandler,
     ChatMemberHandler
 )
 from telegram.constants import MessageReactionType
@@ -98,7 +97,6 @@ async def track_reaction(update: Update, context: CallbackContext):
     logger.info("========== NEW REACTION EVENT ==========")
     logger.info(f"Update: {update}")
     
-    # Check if it's a message reaction
     if not hasattr(update, 'message_reaction'):
         logger.info("Not a message reaction")
         return
@@ -198,14 +196,11 @@ def main():
     app.add_handler(CommandHandler("leaderboard", show_leaderboard))
     app.add_handler(CommandHandler("debug", debug_chat_id))
     
-    # Add message handler first
-    app.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND & ~filters.UpdateType.MESSAGE_REACTION,
-        track_message
-    ))
+    # Add message handler
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
     
-    # Then reaction handler
-    app.add_handler(ReactionHandler(track_reaction, message_reaction=True))
+    # Use MessageHandler for reactions instead of ReactionHandler
+    app.add_handler(MessageHandler(filters.StatusUpdate.MESSAGE_REACTION, track_reaction))
     
     # Add error handler
     app.add_error_handler(error_handler)
