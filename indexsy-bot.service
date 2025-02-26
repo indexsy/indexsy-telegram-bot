@@ -1,0 +1,16 @@
+[Unit]
+Description=Indexsy Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/projects/indexsy-telegram-bot
+ExecStart=/bin/bash -c "source venv/bin/activate && python bot.py"
+Restart=always
+RestartSec=10
+StandardOutput=append:/root/projects/indexsy-telegram-bot/bot.log
+StandardError=append:/root/projects/indexsy-telegram-bot/bot.log
+
+[Install]
+WantedBy=multi-user.target 

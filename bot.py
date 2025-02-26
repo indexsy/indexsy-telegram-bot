@@ -8,6 +8,10 @@ import json
 import tempfile
 import shutil
 import sys
+import time
+import threading
+import signal
+import subprocess
 
 # Setup logging
 logging.basicConfig(
@@ -23,11 +27,17 @@ BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 # Constants for data files
 DATA_FILE = 'engagement_data.json'
 HISTORY_FILE = 'engagement_history.json'
+PID_FILE = "bot.pid"
 
 # Store engagement data per chat
 engagement_data = {}
 # Cache to store message senders: chat_id -> {message_id: user_id}
 message_senders = {}
+
+# Watchdog variables
+WATCHDOG_INTERVAL = 60  # Check every 60 seconds
+last_activity_time = time.time()
+watchdog_running = False
 
 # Custom handler for message_reaction updates
 class ReactionHandler(BaseHandler):
@@ -41,8 +51,14 @@ class ReactionHandler(BaseHandler):
     async def handle_update(self, update, application, check_result, context):
         return await self.callback(update, context)
 
+def update_activity_timestamp():
+    """Update the last activity timestamp."""
+    global last_activity_time
+    last_activity_time = time.time()
+
 async def start(update: Update, context: CallbackContext):
     """Welcome message for the bot."""
+    update_activity_timestamp()
     await update.message.reply_text(
         "👋 Hi! I'm tracking engagement in this chat.\n"
         "• Messages are counted\n"
@@ -53,6 +69,7 @@ async def start(update: Update, context: CallbackContext):
 async def track_message(update: Update, context: CallbackContext):
     """Track messages and store sender information."""
     try:
+        update_activity_timestamp()
         if not update.message or not update.message.from_user:
             return
             
@@ -93,6 +110,7 @@ async def track_message(update: Update, context: CallbackContext):
 async def track_reaction(update: Update, context: CallbackContext):
     """Track reactions."""
     try:
+        update_activity_timestamp()
         reaction = update.message_reaction
         if not reaction or not reaction.user or reaction.user.is_bot:
             logger.info("Skipping reaction: missing data or from bot")
@@ -147,6 +165,7 @@ async def track_reaction(update: Update, context: CallbackContext):
 async def show_stats(update: Update, context: CallbackContext):
     """Show top 5 users by total points."""
     try:
+        update_activity_timestamp()
         chat_id = str(update.message.chat.id)
         
         if chat_id not in engagement_data:
@@ -172,6 +191,7 @@ async def show_stats(update: Update, context: CallbackContext):
 async def show_admin_stats(update: Update, context: CallbackContext):
     """Show detailed stats for admins (top 25)."""
     try:
+        update_activity_timestamp()
         chat_id = str(update.message.chat.id)
         user_id = str(update.message.from_user.id)
         
@@ -209,6 +229,7 @@ async def show_admin_stats(update: Update, context: CallbackContext):
 async def show_history(update: Update, context: CallbackContext):
     """Show historical leaderboard data for admins."""
     try:
+        update_activity_timestamp()
         chat_id = str(update.message.chat.id)
         user_id = str(update.message.from_user.id)
         
@@ -338,13 +359,65 @@ def check_monthly_reset():
     except Exception as e:
         logger.error(f"Error in monthly reset: {e}")
 
+def watchdog_function():
+    """Monitor bot activity and restart if necessary."""
+    global watchdog_running
+    
+    if watchdog_running:
+        return
+        
+    watchdog_running = True
+    logger.info("🔍 Watchdog started")
+    
+    while True:
+        try:
+            current_time = time.time()
+            elapsed_time = current_time - last_activity_time
+            
+            # If no activity for more than 5 minutes, restart the bot
+            if elapsed_time > 300:  # 5 minutes
+                logger.error(f"⚠️ Bot appears to be inactive for {elapsed_time:.1f} seconds. Restarting...")
+                
+                # Save data before restarting
+                save_data()
+                
+                # Remove PID file
+                if os.path.exists(PID_FILE):
+                    os.remove(PID_FILE)
+                
+                # Restart the bot
+                restart_bot()
+                return  # Exit this watchdog thread
+            
+            # Sleep for the interval
+            time.sleep(WATCHDOG_INTERVAL)
+            
+        except Exception as e:
+            logger.error(f"Error in watchdog: {e}")
+            time.sleep(WATCHDOG_INTERVAL)  # Sleep even on error
+
+def restart_bot():
+    """Restart the bot process."""
+    try:
+        logger.info("🔄 Restarting bot...")
+        
+        # Get the path to the current script
+        script_path = os.path.abspath(__file__)
+        
+        # Start a new process
+        subprocess.Popen([sys.executable, script_path])
+        
+        # Exit the current process
+        os._exit(0)
+        
+    except Exception as e:
+        logger.error(f"Failed to restart bot: {e}")
+
 def check_single_instance():
     """Ensure only one instance of the bot is running."""
-    pid_file = "bot.pid"
-    
     try:
-        if os.path.exists(pid_file):
-            with open(pid_file, 'r') as f:
+        if os.path.exists(PID_FILE):
+            with open(PID_FILE, 'r') as f:
                 old_pid = f.read().strip()
                 try:
                     # Check if process is still running
@@ -356,7 +429,7 @@ def check_single_instance():
                     pass
                     
         # Write current PID
-        with open(pid_file, 'w') as f:
+        with open(PID_FILE, 'w') as f:
             f.write(str(os.getpid()))
             
     except Exception as e:
@@ -382,6 +455,13 @@ def main():
         app.add_handler(CommandHandler("history", show_history))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_message))
         app.add_handler(ReactionHandler(track_reaction, block=False))
+        
+        # Start the watchdog in a separate thread
+        watchdog_thread = threading.Thread(target=watchdog_function, daemon=True)
+        watchdog_thread.start()
+        
+        # Update activity timestamp at startup
+        update_activity_timestamp()
         
         logger.info("🚀 Bot starting...")
         app.run_polling(
